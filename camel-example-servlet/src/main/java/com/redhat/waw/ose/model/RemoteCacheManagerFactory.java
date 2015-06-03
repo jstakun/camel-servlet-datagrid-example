@@ -1,6 +1,7 @@
 package com.redhat.waw.ose.model;
 
 import java.io.IOException;
+import java.util.Properties;
 
 import org.infinispan.client.hotrod.RemoteCacheManager;
 import org.infinispan.client.hotrod.configuration.ConfigurationBuilder;
@@ -18,6 +19,15 @@ public class RemoteCacheManagerFactory {
 		 clientBuilder = new ConfigurationBuilder();
 		 clientBuilder.addServer()
 		 .host(hostname).port(port)
+		 .marshaller(new ProtoStreamMarshaller());
+	 }
+	 
+	 public RemoteCacheManagerFactory() throws IOException {
+		 Properties prop = new Properties();		 
+		 prop.load(getClass().getResourceAsStream("/remote.properties"));		 
+		 clientBuilder = new ConfigurationBuilder();
+		 clientBuilder.addServer()
+		 .host(prop.getProperty("host","localhost")).port(Integer.valueOf(prop.getProperty("port", "11222")))
 		 .marshaller(new ProtoStreamMarshaller());
 	 }
 	 

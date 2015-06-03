@@ -63,6 +63,8 @@
   			<artifactId>camel-jbossdatagrid</artifactId>
   			<version>6.4.0.Final-redhat-4</version>
 		</dependency>
+		
+		<!-- infinispan -->
 		<dependency>
 			<groupId>org.infinispan</groupId>
 			<artifactId>infinispan-remote</artifactId>
@@ -70,7 +72,7 @@
 			<scope>provided</scope>
 		</dependency>
 		
-        <!-- we need spring web -->
+        <!-- spring web -->
         <dependency>
             <groupId>org.springframework</groupId>
             <artifactId>spring-web</artifactId>
@@ -82,9 +84,9 @@
             <artifactId>log4j</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-        </dependency>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+		</dependency>
 
         <!-- data model -->
         <dependency>

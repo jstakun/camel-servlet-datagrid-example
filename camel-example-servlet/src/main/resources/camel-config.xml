@@ -1,135 +1,148 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--
-    Licensed to the Apache Software Foundation (ASF) under one or more
-    contributor license agreements.  See the NOTICE file distributed with
-    this work for additional information regarding copyright ownership.
-    The ASF licenses this file to You under the Apache License, Version 2.0
-    (the "License"); you may not use this file except in compliance with
-    the License.  You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
--->
+<!-- Licensed to the Apache Software Foundation (ASF) under one or more contributor 
+	license agreements. See the NOTICE file distributed with this work for additional 
+	information regarding copyright ownership. The ASF licenses this file to 
+	You under the Apache License, Version 2.0 (the "License"); you may not use 
+	this file except in compliance with the License. You may obtain a copy of 
+	the License at http://www.apache.org/licenses/LICENSE-2.0 Unless required 
+	by applicable law or agreed to in writing, software distributed under the 
+	License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS 
+	OF ANY KIND, either express or implied. See the License for the specific 
+	language governing permissions and limitations under the License. -->
 
 <!-- START SNIPPET: e1 -->
 <beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:camel="http://camel.apache.org/schema/spring"
-       xsi:schemaLocation="
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camel="http://camel.apache.org/schema/spring"
+	xsi:schemaLocation="
          http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
          http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
 
-   <bean id="remoteCacheManagerFactory" class="com.redhat.waw.ose.model.RemoteCacheManagerFactory">
-		<constructor-arg value="192.168.122.78"/>
-		<constructor-arg value="11522"/>
-   </bean>
- 
-   <bean id="cacheManager" factory-bean="remoteCacheManagerFactory" factory-method="newRemoteCacheManager"/>
-  
-   <camelContext xmlns="http://camel.apache.org/schema/spring">
-    <dataFormats>
-        <jaxb contextPath="com.redhat.waw.ose.model" prettyPrint="true" id="ctJaxb"/>
-        <json library="Jackson" unmarshalTypeName="com.redhat.waw.ose.model.CustomerTransaction" id="ctJson"/>
-    </dataFormats>
-    <route customId="true" id="Main Route">
-        <from uri="servlet:///datagrid"/>
-        <choice>
-            <description>incoming requests from the servlet is routed</description>
-            <when>
-                <header>putMemcached</header>
-                <setBody>
-                    <simple>${header.putMemcached}</simple>
-                </setBody>
-                <unmarshal ref="ctJaxb"/>
-                <setHeader headerName="CamelInfinispanKey">
-                    <simple>${in.body.transactionid}</simple>
-                </setHeader>
-                <setHeader headerName="CamelInfinispanValue">
-                    <simple>${in.body}</simple>
-                </setHeader>
-                <to uri="infinispan://192.168.122.78:11522?cacheName=memcachedCache"/>
-                <log message="Updated entry ${header.CamelInfinispanKey} with value ${header.CamelInfinispanValue}" loggingLevel="INFO"/>
-            </when>
-            <when>
-                <header>putXml</header>
-                <setBody>
-                    <simple>${header.putXml}</simple>
-                </setBody>
-                <unmarshal ref="ctJaxb"/>
-                <to uri="direct:putHotRod"/>
-            </when>
-            <when>
-                <header>putJson</header>
-                <setBody>
-                    <simple>${header.putJson}</simple>
-                </setBody>
-                <unmarshal ref="ctJson"/>
-                <to uri="direct:putHotRod"/>
-            </when>
-            <when>
-                <header>getMemcached</header>
-                <setHeader headerName="CamelInfinispanKey">
-                    <simple>${header.getMemcached}</simple>
-                </setHeader>
-                <to uri="infinispan://192.168.122.78:11522?cacheName=memcachedCache&amp;command=GET"/>
-                <setBody>
-                    <simple>${header.CamelInfinispanOperationResult}</simple>
-                </setBody>
-                <marshal ref="ctJson"/>
-                <log message="Retrived Event that entry ${header.CamelInfinispanKey} was updated with value ${body}" loggingLevel="INFO"/>
-            </when>
-            <when>
-                <header>getJson</header>
-                <setHeader headerName="CamelInfinispanKey">
-                    <simple resultType="java.lang.String">${header.getJson}</simple>
-                </setHeader>
-                <to uri="direct:getHotRod"/>
-                <marshal ref="ctJson"/>
-            </when>
-            <when>
-                <header>getXml</header>
-                <setHeader headerName="CamelInfinispanKey">
-                    <simple resultType="java.lang.String">${header.getXml}</simple>
-                </setHeader>
-                <to uri="direct:getHotRod"/>
-                <marshal ref="ctJaxb"/>
-            </when>
-            <otherwise>
-                <transform>
-                    <description>if no name parameter then output a syntax to the user</description>
-                    <constant>Add a put,get parameter to uri, eg ? put=foo</constant>
-                </transform>
-            </otherwise>
-        </choice>
-    </route>
-    <route customId="true" id="Put to HotRod cache">
-        <from uri="direct:putHotRod"/>
-        <setHeader headerName="CamelInfinispanKey">
-            <simple>${in.body.transactionid}</simple>
-        </setHeader>
-        <setHeader headerName="CamelInfinispanValue">
-            <simple>${in.body}</simple>
-        </setHeader>
-        <to uri="infinispan://localhost?cacheContainer=#cacheManager"/>
-        <log message="Updated entry ${header.CamelInfinispanKey} with value ${header.CamelInfinispanValue}" loggingLevel="INFO"/>
-    </route>
-    <route customId="true" id="Get from HotRod cache">
-       <from uri="direct:getHotRod"/>
-       <setHeader headerName="CamelInfinispanOperation">
-             <simple>CamelInfinispanOperationGet</simple>
-       </setHeader>
-       <to uri="infinispan://localhost?cacheContainer=#cacheManager"/>
-       <setBody>
-             <simple resultType="com.redhat.waw.ose.model.CustomerTransaction">${header.CamelInfinispanOperationResult}</simple>
-       </setBody>
-       <log message="Retrived Event that entry ${header.CamelInfinispanKey} was updated with value ${body}" loggingLevel="INFO"/> 
-    </route>
-</camelContext>
+    <bean id="remoteCacheManagerFactory" class="com.redhat.waw.ose.model.RemoteCacheManagerFactory"/>
 
+	<bean id="cacheManager" factory-bean="remoteCacheManagerFactory"
+		factory-method="newRemoteCacheManager" />
+
+	<camelContext xmlns="http://camel.apache.org/schema/spring">
+		<dataFormats>
+			<jaxb contextPath="com.redhat.waw.ose.model" prettyPrint="true"
+				id="ctJaxb" />
+			<json library="Jackson" unmarshalTypeName="com.redhat.waw.ose.model.CustomerTransaction"
+				id="ctJson" />
+		</dataFormats>
+		<onException>
+            <exception>java.lang.Exception</exception>
+            <handled>
+        		<constant>true</constant>
+    		</handled>
+    		<log
+				message="Operation failed with message: ${exception}"
+				loggingLevel="ERROR" logName="com.redhat.waw"/>
+            <transform>
+            	<simple>Operation failed with message: ${exception.message}</simple>
+            </transform>
+        </onException>
+		<route customId="true" id="Main Route">
+			<from uri="servlet:///datagrid" />
+			<choice>
+				<description>incoming requests from the servlet is routed</description>
+				<when>
+					<header>putMemcached</header>
+					<setBody>
+						<simple>${header.putMemcached}</simple>
+					</setBody>
+					<unmarshal ref="ctJaxb" />
+					<setHeader headerName="CamelInfinispanKey">
+						<simple>${in.body.transactionid}</simple>
+					</setHeader>
+					<setHeader headerName="CamelInfinispanValue">
+						<simple>${in.body}</simple>
+					</setHeader>
+					<to uri="infinispan://192.168.122.78:11522?cacheName=memcachedCache" />
+					<log
+						message="Updated entry ${header.CamelInfinispanKey} with value ${header.CamelInfinispanValue}"
+						loggingLevel="INFO" />
+				</when>
+				<when>
+					<header>putXml</header>
+					<setBody>
+						<simple>${header.putXml}</simple>
+					</setBody>
+					<unmarshal ref="ctJaxb" />
+					<to uri="direct:putHotRod" />
+				</when>
+				<when>
+					<header>putJson</header>
+					<setBody>
+						<simple>${header.putJson}</simple>
+					</setBody>
+					<unmarshal ref="ctJson" />
+					<to uri="direct:putHotRod" />
+				</when>
+				<when>
+					<header>getMemcached</header>
+					<setHeader headerName="CamelInfinispanKey">
+						<simple>${header.getMemcached}</simple>
+					</setHeader>
+					<to
+						uri="infinispan://192.168.122.78:11522?cacheName=memcachedCache&amp;command=GET" />
+					<setBody>
+						<simple>${header.CamelInfinispanOperationResult}</simple>
+					</setBody>
+					<marshal ref="ctJson" />
+					<log
+						message="Retrived Event that entry ${header.CamelInfinispanKey} was updated with value ${body}"
+						loggingLevel="INFO" />
+				</when>
+				<when>
+					<header>getJson</header>
+					<setHeader headerName="CamelInfinispanKey">
+						<simple resultType="java.lang.String">${header.getJson}</simple>
+					</setHeader>
+					<to uri="direct:getHotRod" />
+					<marshal ref="ctJson" />
+				</when>
+				<when>
+					<header>getXml</header>
+					<setHeader headerName="CamelInfinispanKey">
+						<simple resultType="java.lang.String">${header.getXml}</simple>
+					</setHeader>
+					<to uri="direct:getHotRod" />
+					<marshal ref="ctJaxb" />
+				</when>
+				<otherwise>
+					<transform>
+						<description>if no name parameter then output a syntax to the user</description>
+						<constant>Add a put,get parameter to uri, eg ? put=foo</constant>
+					</transform>
+				</otherwise>
+			</choice>
+		</route>
+		<route customId="true" id="Put to HotRod cache">
+			<from uri="direct:putHotRod" />
+			<setHeader headerName="CamelInfinispanKey">
+				<simple>${in.body.transactionid}</simple>
+			</setHeader>
+			<setHeader headerName="CamelInfinispanValue">
+				<simple>${in.body}</simple>
+			</setHeader>
+			<to uri="infinispan://localhost?cacheContainer=#cacheManager" />
+			<log
+				message="Updated entry ${header.CamelInfinispanKey} with value ${header.CamelInfinispanValue}"
+				loggingLevel="INFO" />
+		</route>
+		<route customId="true" id="Get from HotRod cache">
+			<from uri="direct:getHotRod" />
+			<setHeader headerName="CamelInfinispanOperation">
+				<simple>CamelInfinispanOperationGet</simple>
+			</setHeader>
+			<to uri="infinispan://localhost?cacheContainer=#cacheManager" />
+			<setBody>
+				<simple resultType="com.redhat.waw.ose.model.CustomerTransaction">${header.CamelInfinispanOperationResult}</simple>
+			</setBody>
+			<log
+				message="Retrived Event that entry ${header.CamelInfinispanKey} was updated with value ${body}"
+				loggingLevel="INFO" />
+		</route>
+	</camelContext>
 </beans>
-  <!-- END SNIPPET: e1 -->
+<!-- END SNIPPET: e1 -->

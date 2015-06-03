@@ -1,7 +1,7 @@
 Camel Servlet and JBoss Data Grid example
 =======================================
 
-An example which shows how to use the Camel Servlet with JBoss Dta Grid.
+An example which shows how to use the Camel Servlet with JBoss Data Grid.
 
 You will need to package this example first:
   mvn package
