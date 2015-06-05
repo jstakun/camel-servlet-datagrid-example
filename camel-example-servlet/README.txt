@@ -30,6 +30,8 @@ GET http://localhost:8080/camel-example-servlet/camel/datagrid?getJson=29
 
 GET http://localhost:8080/camel-example-servlet/camel/datagrid?getMemcached=29
 
+GET http://localhost:8080/camel-example-servlet/camel/hello?name=Jarek
+
 ------------------------
 
 

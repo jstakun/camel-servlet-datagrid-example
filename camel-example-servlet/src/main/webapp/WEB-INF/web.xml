@@ -33,6 +33,10 @@
   <listener>
     <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
   </listener>
+  <!--listener>
+    <listener-class>org.apache.camel.component.servletlistener.JndiCamelServletContextListener</listener-class>
+  </listener-->
+ 
 
   <!-- Camel servlet -->
   <servlet>
