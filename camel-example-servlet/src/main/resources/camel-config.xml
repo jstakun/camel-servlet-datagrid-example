@@ -21,21 +21,26 @@
 
 	<bean id="cacheManager" factory-bean="remoteCacheManagerFactory"
 		factory-method="newRemoteCacheManager" />
-		
+
 	<bean id="camelTracer" class="org.apache.camel.processor.interceptor.Tracer">
-    	<property name="traceExceptions" value="true"/>
-    	<property name="traceInterceptors" value="true"/>
-    	<property name="traceOutExchanges" value="true" />
-    	<property name="logLevel" value="INFO"/>
-    	<property name="logName" value="com.redhat.waw.camel"/>
-	</bean>	
-	
-	<bean id="traceFormatter" class="org.apache.camel.processor.interceptor.DefaultTraceFormatter">
-  		<property name="showOutBody" value="true" />
-  		<property name="showOutBodyType" value="true" />
+		<property name="traceExceptions" value="true" />
+		<property name="traceInterceptors" value="true" />
+		<property name="traceOutExchanges" value="true" />
+		<property name="logLevel" value="INFO" />
+		<property name="logName" value="com.redhat.waw.camel" />
 	</bean>
 
-	<camelContext trace="false" xmlns="http://camel.apache.org/schema/spring">
+	<bean id="traceFormatter"
+		class="org.apache.camel.processor.interceptor.DefaultTraceFormatter">
+		<property name="showOutBody" value="true" />
+		<property name="showOutBodyType" value="true" />
+	</bean>
+
+	<camelContext trace="false"
+		xmlns="http://camel.apache.org/schema/spring">
+		<propertyPlaceholder id="properties"
+                             location="classpath:/remote.properties"
+                             xmlns="http://camel.apache.org/schema/spring"/>
 		<dataFormats>
 			<jaxb contextPath="com.redhat.waw.ose.model" prettyPrint="true"
 				id="ctJaxb" />
@@ -69,7 +74,7 @@
 					<setHeader headerName="CamelInfinispanValue">
 						<simple>${in.body}</simple>
 					</setHeader>
-					<to uri="infinispan://192.168.122.78:11522?cacheName=memcachedCache" />
+					<to uri="infinispan://{{host}}:{{port}}?cacheName={{mcache}}" />
 					<log
 						message="Updated entry ${header.CamelInfinispanKey} with value ${header.CamelInfinispanValue}"
 						loggingLevel="INFO" />
@@ -96,7 +101,7 @@
 						<simple>${header.getMemcached}</simple>
 					</setHeader>
 					<to
-						uri="infinispan://192.168.122.78:11522?cacheName=memcachedCache&amp;command=GET" />
+						uri="infinispan://{{host}}:{{port}}?cacheName={{mcache}}&amp;command=GET" />
 					<setBody>
 						<simple>${header.CamelInfinispanOperationResult}</simple>
 					</setBody>
@@ -156,21 +161,23 @@
 				loggingLevel="INFO" />
 		</route>
 		<route customId="true" id="Hello Route">
-			<!-- incoming requests from the servlet is routed -->
 			<from uri="servlet:///hello" />
 			<choice>
+				<description>incoming requests from the servlet is routed</description>
 				<when>
-					<!-- is there a header with the key name? -->
 					<header>name</header>
-					<!-- yes so return back a message to the user -->
-					<log message="Created out message: Hello ${header.name} how are you?" loggingLevel="INFO" />
+					<log message="Created out message: Hello ${header.name} how are you?"
+						loggingLevel="INFO">
+						<description>is there a header with the key name?
+yes so return back a message to the user</description>
+					</log>
 					<transform>
 						<simple>Hello ${header.name} how are you?</simple>
 					</transform>
 				</when>
 				<otherwise>
-					<!-- if no name parameter then output a syntax to the user -->
 					<transform>
+						<description>if no name parameter then output a syntax to the user</description>
 						<constant>Add a name parameter to uri, eg ?name=foo</constant>
 					</transform>
 				</otherwise>

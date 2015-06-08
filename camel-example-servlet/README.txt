@@ -3,10 +3,9 @@ Camel Servlet and JBoss Data Grid example
 
 An example which shows how to use the Camel Servlet with JBoss Data Grid.
 
-You will need to package this example first:
-  mvn package
+This project depends on cdm project: https://github.com/jstakun/cdm.
 
-To run the example deploy it in JBoss EAP.
+To run the example deploy it to JBoss EAP using mvn jboss-as:deploy.
 
 POST http://localhost:8080/camel-example-servlet/camel/datagrid
 
