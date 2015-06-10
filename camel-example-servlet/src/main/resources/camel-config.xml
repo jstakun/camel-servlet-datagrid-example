@@ -142,7 +142,7 @@
 			<setHeader headerName="CamelInfinispanValue">
 				<simple>${in.body}</simple>
 			</setHeader>
-			<to uri="infinispan://localhost?cacheContainer=#cacheManager" />
+			<to uri="infinispan://{{host}}:{{port}}?cacheContainer=#cacheManager" />
 			<log
 				message="Updated entry ${header.CamelInfinispanKey} with value ${header.CamelInfinispanValue}"
 				loggingLevel="INFO" />
@@ -152,7 +152,7 @@
 			<setHeader headerName="CamelInfinispanOperation">
 				<simple>CamelInfinispanOperationGet</simple>
 			</setHeader>
-			<to uri="infinispan://localhost?cacheContainer=#cacheManager" />
+			<to uri="infinispan://{{host}}:{{port}}?cacheContainer=#cacheManager" />
 			<setBody>
 				<simple resultType="com.redhat.waw.ose.model.CustomerTransaction">${header.CamelInfinispanOperationResult}</simple>
 			</setBody>
