@@ -14,20 +14,15 @@ public class CustomerTransactionMarshaller implements MessageMarshaller<Customer
    
    required int64 transactionDate = 4;*/
 	
-	@Override
 	public Class<? extends CustomerTransaction> getJavaClass() {
 		return CustomerTransaction.class;
 	}
 
-	@Override
 	public String getTypeName() {
 		return "protony.CustomerTransaction";
 	}
 
-	@Override
-	public CustomerTransaction readFrom(
-			org.infinispan.protostream.MessageMarshaller.ProtoStreamReader reader)
-			throws IOException {
+	public CustomerTransaction readFrom(ProtoStreamReader reader) throws IOException {
 		CustomerTransaction t = new CustomerTransaction(); 
 		t.setTransactionid(reader.readString("transactionid"));
 		t.setCustomerid(reader.readString("customerid"));
@@ -36,8 +31,7 @@ public class CustomerTransactionMarshaller implements MessageMarshaller<Customer
 		return t;
 	}
 
-	@Override
-	public void writeTo(org.infinispan.protostream.MessageMarshaller.ProtoStreamWriter writer, CustomerTransaction t) throws IOException {
+	public void writeTo(ProtoStreamWriter writer, CustomerTransaction t) throws IOException {
 		writer.writeString("transactionid", t.getTransactionid());
 		writer.writeString("customerid", t.getCustomerid());
 		writer.writeDouble("amount", t.getAmount());
@@ -54,3 +48,4 @@ public class CustomerTransactionMarshaller implements MessageMarshaller<Customer
 	
 }
 
+ 
